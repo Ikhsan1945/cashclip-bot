@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CashClip - Tonton Iklan</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;900&family=Nunito:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold: #FFD700;
+    --gold-dark: #FFA500;
+    --green: #00E676;
+    --bg: #0D0D0D;
+    --card: #1A1A2E;
+    --purple: #7B2FFF;
+  }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  /* ── Top Bar ── */
+  .top-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .top-bar .logo {
+    font-family: 'Kanit', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--gold);
+    letter-spacing: 0.5px;
+  }
+  .top-bar .earn-badge {
+    background: linear-gradient(135deg, #1e3a1e, #2d5a2d);
+    border: 1px solid #00E676;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  /* ── Ad Container ── */
+  .ad-wrap {
+    width: 100%;
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Video area */
+  .video-container {
+    width: 100%;
+    max-height: 58vh;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+  }
+  .video-container video,
+  .video-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    max-height: 58vh;
+  }
+
+  /* Overlay countdown on video */
+  .video-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+  }
+  .countdown-ring {
+    width: 52px;
+    height: 52px;
+    position: relative;
+  }
+  .countdown-ring svg {
+    transform: rotate(-90deg);
+  }
+  .countdown-ring .bg-circle { fill: none; stroke: rgba(0,0,0,0.5); stroke-width: 4; }
+  .countdown-ring .progress-circle {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 126;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+  }
+  .countdown-ring .num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Kanit', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+  }
+
+  /* ── Bottom Panel ── */
+  .bottom-panel {
+    width: 100%;
+    padding: 16px 18px 24px;
+    background: var(--card);
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .reward-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    background: rgba(255,215,0,0.08);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 12px;
+  }
+  .reward-info .icon { font-size: 26px; }
+  .reward-info .texts { flex: 1; }
+  .reward-info .label { font-size: 11px; color: #888; }
+  .reward-info .amount {
+    font-family: 'Kanit', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1.1;
+  }
+
+  /* Progress bar */
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+  }
+  .progress-label .watching { color: var(--green); font-weight: 600; }
+  .progress-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--purple), var(--gold));
+    transition: width 1s linear;
+  }
+
+  /* CTA Button */
+  .cta-btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Kanit', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-btn:disabled {
+    background: #2a2a2a;
+    color: #555;
+    cursor: not-allowed;
+  }
+  .cta-btn.active {
+    background: linear-gradient(135deg, #00C851, #007E33);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(0,200,81,0.4);
+    animation: pulse-btn 1.5s infinite;
+  }
+  @keyframes pulse-btn {
+    0%, 100% { box-shadow: 0 6px 24px rgba(0,200,81,0.4); }
+    50% { box-shadow: 0 6px 36px rgba(0,200,81,0.7); }
+  }
+  .cta-btn .shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    animation: shimmer 2s infinite;
+  }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  /* ── Success Overlay ── */
+  .success-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+  .success-overlay.show { display: flex; }
+  .success-icon {
+    width: 90px;
+    height: 90px;
+    background: linear-gradient(135deg, #00C851, #00E676);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    animation: pop-in 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes pop-in {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .success-title {
+    font-family: 'Kanit', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .success-amount {
+    font-family: 'Kanit', sans-serif;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--gold);
+  }
+  .success-sub { font-size: 14px; color: #888; }
+  .closing-bar {
+    width: 200px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .closing-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 4px;
+    animation: fill-bar 2s linear forwards;
+  }
+  @keyframes fill-bar {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <div class="logo">💰 CashClip</div>
+  <div class="earn-badge" id="earnBadge">+Rp<span id="rateDisplay">700</span></div>
+</div>
+
+<!-- Ad Wrap -->
+<div class="ad-wrap">
+  <!-- Video / Image Ad -->
+  <div class="video-container" id="videoContainer">
+    <!-- Default: pakai gambar placeholder; ganti dengan <video> untuk video iklan -->
+    <img id="adImage" src="" alt="Iklan">
+
+    <!-- Countdown ring overlay -->
+    <div class="video-overlay">
+      <div class="countdown-ring">
+        <svg viewBox="0 0 44 44" width="52" height="52">
+          <circle class="bg-circle" cx="22" cy="22" r="20"/>
+          <circle class="progress-circle" id="svgProgress" cx="22" cy="22" r="20"/>
+        </svg>
+        <div class="num" id="countdownNum">15</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Panel -->
+  <div class="bottom-panel">
+    <div class="reward-info">
+      <div class="icon">🎯</div>
+      <div class="texts">
+        <div class="label">Hadiah untuk Anda</div>
+        <div class="amount">Rp<span id="rewardAmt">700</span></div>
+      </div>
+    </div>
+
+    <div class="progress-label">
+      <span class="watching" id="watchingLabel">⏳ Menonton iklan...</span>
+      <span id="pctLabel">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+
+    <button class="cta-btn" id="ctaBtn" disabled>
+      <span id="ctaBtnText">Tonton hingga selesai...</span>
+    </button>
+  </div>
+</div>
+
+<!-- Success Overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">✅</div>
+  <div class="success-title">Berhasil!</div>
+  <div class="success-amount">+Rp<span id="successAmt">700</span></div>
+  <div class="success-sub">Saldo telah dikreditkan</div>
+  <div class="closing-bar"><div class="closing-fill"></div></div>
+</div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  tg.enableClosingConfirmation();
+
+  // Ambil params dari URL
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token') || '';
+  const rate  = parseInt(params.get('rate') || '700');
+
+  // Daftar gambar iklan (ganti dengan URL iklan nyata Anda)
+  const adImages = [
+    'https://picsum.photos/seed/ad1/400/600',
+    'https://picsum.photos/seed/ad2/400/600',
+    'https://picsum.photos/seed/ad3/400/600',
+  ];
+
+  // Set UI
+  document.getElementById('rateDisplay').textContent = rate.toLocaleString('id');
+  document.getElementById('rewardAmt').textContent   = rate.toLocaleString('id');
+  document.getElementById('successAmt').textContent  = rate.toLocaleString('id');
+
+  // Set random ad image
+  const adImg = document.getElementById('adImage');
+  adImg.src = adImages[Math.floor(Math.random() * adImages.length)];
+
+  // ── Countdown ────────────────────────────────────────────────────────────
+  const TOTAL = 15; // detik
+  const circumference = 2 * Math.PI * 20; // r=20
+  const svgProg = document.getElementById('svgProgress');
+  svgProg.style.strokeDasharray = circumference;
+
+  let seconds = TOTAL;
+  const progressFill = document.getElementById('progressFill');
+  const pctLabel = document.getElementById('pctLabel');
+  const countNum = document.getElementById('countdownNum');
+  const ctaBtn = document.getElementById('ctaBtn');
+  const ctaText = document.getElementById('ctaBtnText');
+  const watchLabel = document.getElementById('watchingLabel');
+
+  const timer = setInterval(() => {
+    seconds--;
+    const pct = ((TOTAL - seconds) / TOTAL) * 100;
+    const offset = circumference * (seconds / TOTAL);
+
+    svgProg.style.strokeDashoffset = offset;
+    countNum.textContent = seconds;
+    progressFill.style.width = pct + '%';
+    pctLabel.textContent = Math.round(pct) + '%';
+
+    if (seconds <= 0) {
+      clearInterval(timer);
+      countNum.textContent = '✓';
+      svgProg.style.stroke = '#00E676';
+      watchLabel.textContent = '✅ Iklan selesai!';
+      watchLabel.style.color = '#00E676';
+      pctLabel.textContent = '100%';
+      progressFill.style.width = '100%';
+
+      ctaBtn.disabled = false;
+      ctaBtn.classList.add('active');
+      ctaText.textContent = '🎁 Klaim Hadiah — Lanjut';
+      ctaBtn.innerHTML = '<div class="shimmer"></div>🎁 Klaim Hadiah — Lanjut';
+    }
+  }, 1000);
+
+  // ── Klaim Hadiah ─────────────────────────────────────────────────────────
+  ctaBtn.addEventListener('click', () => {
+    if (ctaBtn.disabled) return;
+    ctaBtn.disabled = true;
+
+    // Tampilkan success overlay
+    document.getElementById('successOverlay').classList.add('show');
+
+    // Kirim data ke bot
+    const payload = JSON.stringify({ token, rate });
+    tg.sendData(payload);
+
+    // Tutup otomatis setelah 2 detik
+    setTimeout(() => { tg.close(); }, 2200);
+  });
+</script>
+</body>
+</html>

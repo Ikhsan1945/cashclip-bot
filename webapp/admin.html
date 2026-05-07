@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CashClip — Admin Panel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #050508;
+    --surface: #0E0E14;
+    --border: rgba(255,255,255,0.07);
+    --gold: #F5C842;
+    --green: #3DFF8F;
+    --red: #FF4D6D;
+    --blue: #4D9FFF;
+    --text: #E8E8F0;
+    --muted: #555570;
+  }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 28px 0;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+  }
+  .sidebar-logo {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--gold);
+  }
+  .sidebar-logo span { font-size: 11px; color: var(--muted); }
+  .nav-item {
+    padding: 11px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-item.active { color: var(--gold); border-left-color: var(--gold); background: rgba(245,200,66,0.06); }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  /* ── Main ── */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    padding: 32px;
+  }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 28px;
+  }
+  .page-header h2 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .page-header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* ── Stats Cards ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.gold::before { background: linear-gradient(90deg, var(--gold), transparent); }
+  .stat-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .stat-card.blue::before { background: linear-gradient(90deg, var(--blue), transparent); }
+  .stat-card.red::before { background: linear-gradient(90deg, var(--red), transparent); }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Table ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-header h3 { font-size: 15px; font-weight: 700; }
+  .card-header .actions { display: flex; gap: 8px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    padding: 11px 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-align: left;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 13px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-pending { background: rgba(255,165,0,0.15); color: #FFA500; }
+  .badge-approved { background: rgba(61,255,143,0.12); color: var(--green); }
+  .badge-rejected { background: rgba(255,77,109,0.12); color: var(--red); }
+
+  /* Buttons */
+  .btn {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-approve { background: rgba(61,255,143,0.15); color: var(--green); border: 1px solid rgba(61,255,143,0.3); }
+  .btn-approve:hover { background: rgba(61,255,143,0.25); }
+  .btn-reject { background: rgba(255,77,109,0.12); color: var(--red); border: 1px solid rgba(255,77,109,0.2); }
+  .btn-reject:hover { background: rgba(255,77,109,0.22); }
+  .btn-primary { background: var(--gold); color: #000; }
+  .btn-primary:hover { opacity: 0.9; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(245,200,66,0.08); }
+
+  /* Input */
+  .input {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    outline: none;
+  }
+  .input:focus { border-color: var(--gold); }
+
+  /* Broadcast */
+  .textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    resize: vertical;
+    outline: none;
+    min-height: 120px;
+  }
+  .textarea:focus { border-color: var(--gold); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1E1E2E;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 1000;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Chart placeholder */
+  .chart-bar-wrap { padding: 20px; }
+  .chart-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .chart-bar-bg { height: 8px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+  .chart-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--gold), var(--green)); }
+
+  /* Login */
+  #loginScreen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    width: 340px;
+    text-align: center;
+  }
+  .login-card h2 { font-size: 24px; font-weight: 800; color: var(--gold); margin-bottom: 6px; }
+  .login-card p { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+  .login-card .input { width: 100%; margin-bottom: 12px; }
+  .login-card .btn { width: 100%; padding: 12px; font-size: 15px; border-radius: 10px; }
+  .login-err { color: var(--red); font-size: 13px; margin-bottom: 10px; display: none; }
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>💰 CashClip</h2>
+    <p>Admin Panel — Masuk untuk melanjutkan</p>
+    <div class="login-err" id="loginErr">❌ Password salah</div>
+    <input class="input" type="password" id="pwInput" placeholder="Masukkan password admin" onkeydown="if(event.key==='Enter')doLogin()">
+    <br><br>
+    <button class="btn btn-primary" onclick="doLogin()">Masuk</button>
+  </div>
+</div>
+
+<div class="layout" id="appLayout" style="display:none">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h1>💰 CashClip</h1>
+      <span>Admin Dashboard</span>
+    </div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('withdrawals',this)">
+      <span class="nav-icon">💸</span> Penarikan
+    </div>
+    <div class="nav-item" onclick="showPage('users',this)">
+      <span class="nav-icon">👥</span> Pengguna
+    </div>
+    <div class="nav-item" onclick="showPage('broadcast',this)">
+      <span class="nav-icon">📢</span> Broadcast
+    </div>
+    <div class="nav-item" onclick="showPage('settings',this)">
+      <span class="nav-icon">⚙️</span> Pengaturan
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Ringkasan aktivitas CashClip Bot</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card gold">
+          <div class="stat-label">Total Pengguna</div>
+          <div class="stat-value" id="statUsers">—</div>
+          <div class="stat-sub">Terdaftar</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Total Iklan Ditonton</div>
+          <div class="stat-value" id="statWatches">—</div>
+          <div class="stat-sub">Semua user</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Total Dibayarkan</div>
+          <div class="stat-value" id="statPaid">—</div>
+          <div class="stat-sub">Rupiah</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Withdrawal Pending</div>
+          <div class="stat-value" id="statPending">—</div>
+          <div class="stat-sub">Menunggu approve</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>📈 Aktivitas 7 Hari</h3></div>
+        <div class="chart-bar-wrap" id="activityChart">
+          <p style="color:var(--muted); font-size:13px; padding:10px 0">Memuat data...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Withdrawals -->
+    <div class="page" id="page-withdrawals">
+      <div class="page-header">
+        <h2>Penarikan Dana</h2>
+        <p>Kelola semua permintaan withdraw</p>
+      </div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterWD('all',this)">Semua</button>
+        <button class="filter-btn" onclick="filterWD('pending',this)">Pending</button>
+        <button class="filter-btn" onclick="filterWD('approved',this)">Approved</button>
+        <button class="filter-btn" onclick="filterWD('rejected',this)">Rejected</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Daftar Withdrawal</h3>
+          <div class="actions">
+            <input class="input" id="wdSearch" placeholder="Cari user/TX..." oninput="renderWD()" style="width:180px">
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>TX ID</th>
+              <th>User</th>
+              <th>Metode</th>
+              <th>Akun</th>
+              <th>Jumlah</th>
+              <th>Tanggal</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="wdTable">
+            <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">Memuat...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="page" id="page-users">
+      <div class="page-header">
+        <h2>Pengguna</h2>
+        <p>Data semua user terdaftar</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Daftar User</h3>
+          <input class="input" placeholder="Cari username..." style="width:200px">
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>TG ID</th>
+              <th>Username</th>
+              <th>Saldo</th>
+              <th>Total Earned</th>
+              <th>Iklan Ditonton</th>
+              <th>Referral</th>
+              <th>Bergabung</th>
+            </tr>
+          </thead>
+          <tbody id="usersTable">
+            <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Memuat...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Broadcast -->
+    <div class="page" id="page-broadcast">
+      <div class="page-header">
+        <h2>Broadcast</h2>
+        <p>Kirim pesan ke semua pengguna</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>✉️ Kirim Pesan Massal</h3></div>
+        <div style="padding:20px">
+          <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Mendukung HTML: &lt;b&gt;, &lt;i&gt;, &lt;code&gt;</p>
+          <textarea class="textarea" id="broadcastMsg" placeholder="Tulis pesan broadcast di sini..."></textarea>
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+            <button class="btn btn-primary" onclick="sendBroadcast()" style="padding:10px 24px">📢 Kirim Broadcast</button>
+            <span style="font-size:12px;color:var(--muted)" id="broadcastStatus"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <h2>Pengaturan</h2>
+        <p>Konfigurasi bot</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>⚙️ Konfigurasi Bot</h3></div>
+        <div style="padding:20px;display:grid;gap:16px">
+          <div>
+            <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Min. Tarif Iklan (Rp)</label>
+            <input class="input" type="number" id="cfgMin" value="600" style="width:200px">
+          </div>
+          <div>
+            <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Max. Tarif Iklan (Rp)</label>
+            <input class="input" type="number" id="cfgMax" value="900" style="width:200px">
+          </div>
+          <div>
+            <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Min. Penarikan (Rp)</label>
+            <input class="input" type="number" id="cfgMinWd" value="50000" style="width:200px">
+          </div>
+          <div>
+            <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Bonus Referral (Rp)</label>
+            <input class="input" type="number" id="cfgRef" value="2000" style="width:200px">
+          </div>
+          <div>
+            <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:6px">Cooldown antar iklan (detik)</label>
+            <input class="input" type="number" id="cfgCooldown" value="30" style="width:200px">
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()" style="width:160px;padding:10px">💾 Simpan</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────────────────
+  const SUPABASE_URL = localStorage.getItem('sb_url') || '';
+  const SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+  const ADMIN_PASS   = localStorage.getItem('admin_pass') || 'admin123';
+
+  let wdData = [];
+  let wdFilter = 'all';
+
+  // ── Login ────────────────────────────────────────────────────────────────
+  function doLogin() {
+    const pw = document.getElementById('pwInput').value;
+    // Set credentials on first login
+    if (!localStorage.getItem('sb_url')) {
+      const url = prompt('Masukkan Supabase URL:');
+      const key = prompt('Masukkan Supabase Service Key:');
+      const pass = prompt('Buat password admin panel:');
+      if (!url || !key || !pass) return;
+      localStorage.setItem('sb_url', url);
+      localStorage.setItem('sb_key', key);
+      localStorage.setItem('admin_pass', pass);
+      location.reload();
+      return;
+    }
+    if (pw === ADMIN_PASS) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appLayout').style.display = 'flex';
+      loadDashboard();
+    } else {
+      document.getElementById('loginErr').style.display = 'block';
+    }
+  }
+
+  // ── API ──────────────────────────────────────────────────────────────────
+  async function sbFetch(path, opts = {}) {
+    const url = localStorage.getItem('sb_url');
+    const key = localStorage.getItem('sb_key');
+    const res = await fetch(`${url}/rest/v1/${path}`, {
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+        ...opts.headers
+      },
+      ...opts
+    });
+    return res.json();
+  }
+
+  // ── Navigation ───────────────────────────────────────────────────────────
+  function showPage(name, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    el.classList.add('active');
+    if (name === 'dashboard') loadDashboard();
+    if (name === 'withdrawals') loadWithdrawals();
+    if (name === 'users') loadUsers();
+  }
+
+  // ── Dashboard ────────────────────────────────────────────────────────────
+  async function loadDashboard() {
+    const [users, watches, paid, pending] = await Promise.all([
+      sbFetch('users?select=id', { headers: { 'Prefer': 'count=exact' } }),
+      sbFetch('transactions?select=id&type=eq.ad', { headers: { 'Prefer': 'count=exact' } }),
+      sbFetch('withdrawals?select=amount&status=eq.approved'),
+      sbFetch('withdrawals?select=id&status=eq.pending', { headers: { 'Prefer': 'count=exact' } }),
+    ]);
+
+    document.getElementById('statUsers').textContent = Array.isArray(users) ? users.length : '—';
+    document.getElementById('statWatches').textContent = Array.isArray(watches) ? watches.length : '—';
+    const totalPaid = Array.isArray(paid) ? paid.reduce((s, r) => s + r.amount, 0) : 0;
+    document.getElementById('statPaid').textContent = 'Rp' + totalPaid.toLocaleString('id');
+    document.getElementById('statPending').textContent = Array.isArray(pending) ? pending.length : '—';
+
+    renderActivityChart();
+  }
+
+  function renderActivityChart() {
+    const days = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+    const vals = [42, 68, 55, 90, 73, 110, 88];
+    const max = Math.max(...vals);
+    const html = days.map((d, i) => `
+      <div class="chart-label"><span>${d}</span><span>${vals[i]} iklan</span></div>
+      <div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${(vals[i]/max)*100}%"></div></div>
+    `).join('');
+    document.getElementById('activityChart').innerHTML = html;
+  }
+
+  // ── Withdrawals ──────────────────────────────────────────────────────────
+  async function loadWithdrawals() {
+    wdData = await sbFetch('withdrawals?select=*&order=created_at.desc');
+    renderWD();
+  }
+
+  function filterWD(f, el) {
+    wdFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderWD();
+  }
+
+  function renderWD() {
+    const search = document.getElementById('wdSearch')?.value.toLowerCase() || '';
+    let rows = Array.isArray(wdData) ? wdData : [];
+    if (wdFilter !== 'all') rows = rows.filter(r => r.status === wdFilter);
+    if (search) rows = rows.filter(r =>
+      r.id.toLowerCase().includes(search) ||
+      String(r.user_id).includes(search) ||
+      (r.account || '').toLowerCase().includes(search)
+    );
+
+    if (!rows.length) {
+      document.getElementById('wdTable').innerHTML =
+        '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">Tidak ada data</td></tr>';
+      return;
+    }
+
+    document.getElementById('wdTable').innerHTML = rows.map(r => `
+      <tr>
+        <td class="mono">${r.id}</td>
+        <td class="mono">${r.user_id}</td>
+        <td>${r.method?.toUpperCase()}</td>
+        <td class="mono">${r.account}</td>
+        <td style="color:var(--gold);font-weight:700">Rp${Number(r.amount).toLocaleString('id')}</td>
+        <td style="color:var(--muted);font-size:12px">${r.created_at?.slice(0,10)}</td>
+        <td><span class="badge badge-${r.status}">${r.status}</span></td>
+        <td>
+          ${r.status === 'pending' ? `
+            <button class="btn btn-approve" onclick="approveWD('${r.id}','${r.user_id}',${r.amount})">✅ Approve</button>
+            <button class="btn btn-reject" onclick="rejectWD('${r.id}')">❌</button>
+          ` : '—'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function approveWD(id, userId, amount) {
+    if (!confirm(`Approve withdrawal Rp${Number(amount).toLocaleString('id')} untuk user ${userId}?`)) return;
+    await sbFetch(`withdrawals?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'approved', approved_at: new Date().toISOString() })
+    });
+    showToast(`✅ Withdrawal ${id} approved!`);
+    loadWithdrawals();
+
+    // Optionally notify via bot API
+    notifyUser(userId, `✅ <b>Penarikan Dana Berhasil!</b>\n\nRp${Number(amount).toLocaleString('id')} telah dikirim ke akun Anda.\nTerima kasih telah menggunakan CashClip!`);
+  }
+
+  async function rejectWD(id) {
+    if (!confirm(`Reject withdrawal ${id}?`)) return;
+    const wd = wdData.find(r => r.id === id);
+    await sbFetch(`withdrawals?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'rejected' })
+    });
+    // Kembalikan saldo
+    if (wd) {
+      await sbFetch('rpc/increment_balance', {
+        method: 'POST',
+        body: JSON.stringify({ p_user_id: wd.user_id, p_amount: wd.amount })
+      });
+    }
+    showToast('❌ Withdrawal ditolak & saldo dikembalikan');
+    loadWithdrawals();
+  }
+
+  // ── Users ────────────────────────────────────────────────────────────────
+  async function loadUsers() {
+    const data = await sbFetch('users?select=*&order=created_at.desc&limit=100');
+    if (!Array.isArray(data)) return;
+    document.getElementById('usersTable').innerHTML = data.map(u => `
+      <tr>
+        <td class="mono">${u.telegram_id}</td>
+        <td>@${u.username || '—'}</td>
+        <td style="color:var(--gold);font-weight:700">Rp${Number(u.balance||0).toLocaleString('id')}</td>
+        <td>Rp${Number(u.total_earned||0).toLocaleString('id')}</td>
+        <td>—</td>
+        <td>${u.referred_by || '—'}</td>
+        <td style="color:var(--muted);font-size:12px">${u.created_at?.slice(0,10)}</td>
+      </tr>
+    `).join('');
+  }
+
+  // ── Broadcast ────────────────────────────────────────────────────────────
+  async function sendBroadcast() {
+    const msg = document.getElementById('broadcastMsg').value.trim();
+    if (!msg) return;
+    const status = document.getElementById('broadcastStatus');
+
+    // Kirim ke endpoint bot (ganti dengan URL server bot Anda)
+    const botUrl = localStorage.getItem('bot_api_url');
+    if (!botUrl) {
+      status.textContent = '⚠️ Set BOT_API_URL di settings';
+      status.style.color = 'var(--red)';
+      return;
+    }
+    status.textContent = '⏳ Mengirim...';
+    status.style.color = 'var(--muted)';
+    try {
+      await fetch(`${botUrl}/broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, secret: ADMIN_PASS })
+      });
+      status.textContent = '✅ Berhasil dikirim!';
+      status.style.color = 'var(--green)';
+    } catch {
+      status.textContent = '❌ Gagal kirim';
+      status.style.color = 'var(--red)';
+    }
+  }
+
+  // ── Settings ─────────────────────────────────────────────────────────────
+  function saveSettings() {
+    const cfg = {
+      ad_rate_min: document.getElementById('cfgMin').value,
+      ad_rate_max: document.getElementById('cfgMax').value,
+      min_withdraw: document.getElementById('cfgMinWd').value,
+      referral_bonus: document.getElementById('cfgRef').value,
+      cooldown: document.getElementById('cfgCooldown').value,
+    };
+    localStorage.setItem('bot_config', JSON.stringify(cfg));
+    showToast('💾 Pengaturan disimpan!');
+  }
+
+  // ── Notify User ───────────────────────────────────────────────────────────
+  async function notifyUser(userId, text) {
+    const token = localStorage.getItem('bot_token');
+    if (!token) return;
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: userId, text, parse_mode: 'HTML' })
+    });
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
